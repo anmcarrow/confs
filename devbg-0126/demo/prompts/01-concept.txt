@@ -1,0 +1,18 @@
+I need to create a simple Task Management REST API service.
+
+Requirements:
+- Users can create, read, update, and delete tasks
+- Each task has: id, title, description, status (todo/in-progress/done), created_at, updated_at
+- API should follow REST principles
+- Use Python with Flask framework
+- Store data in DynamoDB
+- Deploy as AWS Lambda function with API Gateway
+
+Please analyze this concept and provide:
+1. A clear problem statement
+2. Core functional requirements (5-7 bullet points)
+3. Non-functional requirements (performance, scalability)
+4. Success criteria
+
+Format the output as a structured requirements document.
+Run all operations fully automated and wihout asking for any manual input.

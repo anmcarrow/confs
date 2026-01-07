@@ -1,0 +1,37 @@
+Generate deployment configuration for LocalStack (local AWS environment).
+
+Create:
+
+1. **docker-compose.yml** - LocalStack setup
+   - Services: DynamoDB, Lambda, API Gateway
+   - Port mappings
+   - Environment configuration
+
+2. **deploy-local.sh** - Deployment script for LocalStack
+   - Create DynamoDB table (use --output json and display response)
+   - Deploy Lambda function (show JSON response)
+   - Configure API Gateway (show JSON response)
+   - Output the API endpoint URL
+   - ALL AWS CLI commands MUST use --output json
+   - Display all JSON responses with echo and proper formatting
+   - Use jq if available for pretty-printing, otherwise show raw JSON
+
+3. **test-endpoints.sh** - Test script to verify deployment
+   - Create a task (POST) - display JSON response
+   - List tasks (GET) - display JSON response
+   - Get specific task (GET) - display JSON response
+   - Update task (PUT) - display JSON response
+   - Delete task (DELETE) - display JSON response
+   - Use curl commands with -v flag or display responses
+   - Show all HTTP responses and JSON bodies
+   - Add echo statements before each API call
+
+IMPORTANT: Make ALL LocalStack API interactions visible:
+- Every AWS CLI command should echo its JSON output
+- Every curl command should display the response
+- Add descriptive echo statements before each operation
+- Use colors if possible (green for success, yellow for requests)
+
+Make it easy to run: just execute deploy-local.sh and test-endpoints.sh
+Run all operations fully automated and wihout asking for any manual input.
+All scripts should be fully automated and must not required any manual input.

@@ -1,0 +1,23 @@
+Generate comprehensive tests for the Task Management API.
+
+Create:
+
+1. **test_app.py** - Unit and integration tests
+   - Test all CRUD operations
+   - Test error cases (invalid input, not found, etc.)
+   - Test DynamoDB interactions (mock with moto)
+   - Test input validation
+   - Aim for 80%+ code coverage
+
+2. **test_requirements.txt** - Testing dependencies
+   - pytest, moto (for AWS mocking), pytest-cov
+
+3. **pytest.ini** - Pytest configuration
+
+Include:
+- Fixtures for test data
+- Proper setup/teardown
+- Clear test names and documentation
+- Both positive and negative test cases
+
+All operations should be fully automated and must not required any manual input.

@@ -1,0 +1,24 @@
+Based on the requirements for a Task Management REST API, create Architecture Decision Records (ADRs) for:
+
+1. **Technology Stack Decision**
+   - Why Python + Flask
+   - Why DynamoDB for storage
+   - Why Lambda + API Gateway for deployment
+
+2. **API Design Decision**
+   - REST endpoint structure
+   - HTTP methods and status codes
+   - Request/response formats
+
+3. **Data Model Decision**
+   - DynamoDB table structure
+   - Primary key and sort key design
+   - GSI (Global Secondary Index) considerations
+
+4. **Deployment Architecture Decision**
+   - Lambda function configuration
+   - API Gateway setup
+   - Environment variables and secrets management
+
+Format each ADR with: Context, Decision, Consequences (positive and negative)
+Run all operations fully automated and wihout asking for any manual input.

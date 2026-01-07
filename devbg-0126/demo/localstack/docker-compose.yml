@@ -1,0 +1,16 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: demo-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb,lambda,apigateway,iam,sts,logs
+      - DEBUG=0
+      - LAMBDA_EXECUTOR=local
+    networks:
+      - demo-network
+
+networks:
+  demo-network:
+    driver: bridge

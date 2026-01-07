@@ -1,0 +1,23 @@
+Generate a complete implementation for the Task Management REST API based on the architecture decisions.
+
+Create the following files:
+
+1. **app.py** - Main Flask application with Lambda handler
+   - Implement all CRUD endpoints: POST /tasks, GET /tasks, GET /tasks/{id}, PUT /tasks/{id}, DELETE /tasks/{id}
+   - DynamoDB integration using boto3
+   - Proper error handling and HTTP status codes
+   - Input validation
+
+2. **requirements.txt** - Python dependencies
+   - Flask, boto3, and any other needed packages
+
+3. **serverless.yml** - Serverless Framework configuration
+   - Lambda function definition
+   - API Gateway configuration
+   - DynamoDB table resource
+   - IAM permissions
+
+4. **README.md** - Deployment and usage instructions
+
+Make the code production-ready with proper error handling, logging, and documentation.
+All operations should be fully automated and must not required any manual input.
