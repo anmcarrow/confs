@@ -138,14 +138,51 @@ validate_file() {
     return 0
 }
 
+# Check if file contains executable bash commands
+is_executable_bash() {
+    local file=$1
+    
+    # Check if file exists and is not empty
+    if [ ! -f "$file" ] || [ ! -s "$file" ]; then
+        return 1
+    fi
+    
+    # Check if file starts with shebang
+    if head -n 1 "$file" | grep -q "^#!/bin/bash"; then
+        debug_log "File has bash shebang: $file"
+        return 0
+    fi
+    
+    # Check if file contains bash commands (mkdir, cat, chmod, etc.) without markdown
+    # and doesn't contain Copilot's explanatory output markers (✓, checkmarks, etc.)
+    if grep -q "^mkdir -p\|^cat >\|^chmod +x" "$file" 2>/dev/null && \
+       ! grep -q "^✓\|^I'll\|^I've" "$file" 2>/dev/null; then
+        debug_log "File contains bash commands: $file"
+        return 0
+    fi
+    
+    debug_log "File does not appear to be executable bash: $file"
+    return 1
+}
+
 # Generate with retry logic
 generate_with_retry() {
     local phase_name=$1
     local prompt_file=$2
     local output_file=$3
     local validation_func=$4
+    local execute_as_bash="${5:-false}"  # Optional 5th parameter, defaults to false
+    
+    # Normalize to lowercase for consistent comparison
+    execute_as_bash=$(echo "$execute_as_bash" | tr '[:upper:]' '[:lower:]')
+    
+    debug_log "execute_as_bash parameter: '$execute_as_bash'"
     
     local attempt=1
+    
+    # Ensure output directory exists
+    local output_dir=$(dirname "$output_file")
+    mkdir -p "$output_dir"
     
     while [ $attempt -le $MAX_RETRIES ]; do
         echo ""
@@ -163,6 +200,9 @@ generate_with_retry() {
             start_spinner "🤖 AI is generating $phase_name..."
         fi
         
+        # Track if generation succeeded
+        local generation_succeeded=false
+        
         # Run generation
         if [ "$HAS_COPILOT" = true ]; then
             debug_log "Using copilot for generation"
@@ -173,6 +213,7 @@ generate_with_retry() {
                 # In verbose mode, show output with tee
                 if cat "$prompt_file" | copilot --allow-all-tools | tee "$output_file"; then
                     verbose_log "Copilot generation completed"
+                    generation_succeeded=true
                 else
                     error_log "Copilot generation failed"
                 fi
@@ -180,19 +221,64 @@ generate_with_retry() {
                 # Normal mode, redirect to file
                 if cat "$prompt_file" | copilot --allow-all-tools > "$output_file" 2>&1; then
                     debug_log "Copilot generation completed"
+                    generation_succeeded=true
                 else
                     error_log "Copilot generation failed"
                 fi
+            fi
+            
+            # Execute the generated bash script if generation succeeded and execute_as_bash is true
+            debug_log "Checking execution: generation_succeeded='$generation_succeeded' execute_as_bash='$execute_as_bash'"
+            if [ "$generation_succeeded" = "true" ] && [ "$execute_as_bash" = "true" ]; then
+                # Verify the file is actually executable bash before running it
+                if is_executable_bash "$output_file"; then
+                    debug_log "Executing generated bash script from $output_file"
+                    verbose_log "Running bash commands from Copilot output"
+                    if [ "$VERBOSE" = true ]; then
+                        # In verbose mode, show execution
+                        if bash "$output_file"; then
+                            verbose_log "Bash script execution completed"
+                        else
+                            error_log "Bash script execution failed"
+                            generation_succeeded=false
+                        fi
+                    else
+                        # Normal mode, execute silently
+                        if bash "$output_file" 2>&1 | tee -a "$output_file.exec.log" > /dev/null; then
+                            debug_log "Bash script execution completed"
+                        else
+                            error_log "Bash script execution failed (see $output_file.exec.log)"
+                            generation_succeeded=false
+                        fi
+                    fi
+                else
+                    warning_log "Output file does not contain executable bash commands - likely Copilot generated explanatory text"
+                    debug_log "Copilot may have created files directly using --allow-all-tools instead of generating bash script"
+                fi
+            else
+                debug_log "Skipping bash execution (not a bash script or generation failed)"
             fi
         else
             debug_log "Using simulated response"
             verbose_log "Copilot not available, using simulation"
             simulate_ai_response "$prompt_file" "$output_file"
+            generation_succeeded=true
         fi
         
         # Stop spinner
         if [ "$VERBOSE" = false ] && [ "$DEBUG_MODE" = false ]; then
             stop_spinner
+        fi
+        
+        # Only validate if generation succeeded
+        if [ "$generation_succeeded" = false ]; then
+            error_log "Generation command failed, skipping validation"
+            attempt=$((attempt + 1))
+            if [ $attempt -le $MAX_RETRIES ]; then
+                warning_log "Retrying generation..."
+                sleep $((2 ** (attempt - 1)))  # Exponential backoff
+            fi
+            continue
         fi
         
         # Validate output
@@ -216,7 +302,7 @@ generate_with_retry() {
         
         if [ $attempt -le $MAX_RETRIES ]; then
             warning_log "Generation failed validation, retrying..."
-            sleep 2
+            sleep $((2 ** (attempt - 1)))  # Exponential backoff
         fi
     done
     
@@ -230,7 +316,7 @@ print_banner() {
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║                                                            ║"
     echo "║        AI-DRIVEN DEVELOPMENT PIPELINE                      ║"
-    echo "║        From Concept to Cloud in 15 Minutes                ║"
+    echo "║        From Concept to Cloud in 15 Minutes                 ║"
     echo "║                                                            ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo -e "${RESET}"
@@ -755,7 +841,7 @@ echo ""
 wait
 
 pei "# Sending to AI agent for requirements analysis..."
-if ! generate_with_retry "Business Requirements" "prompts/01-concept.txt" "output/requirements.md" "validate_requirements"; then
+if ! generate_with_retry "Business Requirements" "prompts/01-concept.txt" "output/requirements.md" "validate_requirements" false; then
     error_log "Failed to generate requirements after $MAX_RETRIES attempts"
     exit 1
 fi
@@ -782,7 +868,7 @@ echo ""
 wait
 
 pei "# AI agent creating Architecture Decision Records..."
-if ! generate_with_retry "Architecture ADRs" "prompts/02-architecture.txt" "output/architecture.md" "validate_architecture"; then
+if ! generate_with_retry "Architecture ADRs" "prompts/02-architecture.txt" "output/architecture.md" "validate_architecture" false; then
     error_log "Failed to generate architecture after $MAX_RETRIES attempts"
     exit 1
 fi
@@ -809,7 +895,7 @@ echo ""
 wait
 
 pei "# AI agent generating Flask application..."
-if ! generate_with_retry "Flask Implementation" "prompts/03-implementation.txt" "output/implementation.log" "validate_implementation"; then
+if ! generate_with_retry "Flask Implementation" "prompts/03-implementation.txt" "output/implementation.log" "validate_implementation" true; then
     error_log "Failed to generate implementation after $MAX_RETRIES attempts"
     exit 1
 fi
@@ -817,7 +903,7 @@ echo ""
 wait
 
 pei "# Let's see the generated code structure:"
-if ! retry_command ls -lah output/service/; then
+if ! retry_command 3 ls -lah output/service/; then
     error_log "Service directory not created properly"
     exit 1
 fi
@@ -825,7 +911,11 @@ echo ""
 wait
 
 pei "# Streaming generated code with syntax highlighting..."
-stream_code_preview output/service/app.py 30
+if [ -f "output/service/app.py" ]; then
+    stream_code_preview output/service/app.py 30
+else
+    warning_log "app.py not found, skipping code preview"
+fi
 wait
 # Visualization: Code Generation Metrics
 show_code_metrics_chart
@@ -837,7 +927,7 @@ show_timeline 4
 show_phase_badge 4 "Testing"
 print_phase "🧪 PHASE 4: Test Generation"
 pei "# Generating comprehensive tests..."
-if ! generate_with_retry "Test Suite" "prompts/04-testing.txt" "output/testing.log" "validate_testing"; then
+if ! generate_with_retry "Test Suite" "prompts/04-testing.txt" "output/testing.log" "validate_testing" true; then
     error_log "Failed to generate tests after $MAX_RETRIES attempts"
     exit 1
 fi
@@ -845,7 +935,7 @@ echo ""
 wait
 
 pei "# Test files generated:"
-if ! retry_command ls -lah output/service/tests/; then
+if ! retry_command 3 ls -lah output/service/tests/; then
     error_log "Tests directory not created properly"
     exit 1
 fi
@@ -862,7 +952,7 @@ show_timeline 5
 show_phase_badge 5 "Deployment"
 print_phase "🚀 PHASE 5: Deployment to LocalStack"
 pei "# Generating deployment scripts..."
-if ! generate_with_retry "Deployment Scripts" "prompts/05-deployment.txt" "output/deployment.log" "validate_deployment"; then
+if ! generate_with_retry "Deployment Scripts" "prompts/05-deployment.txt" "output/deployment.log" "validate_deployment" true; then
     error_log "Failed to generate deployment scripts after $MAX_RETRIES attempts"
     exit 1
 fi
@@ -875,29 +965,45 @@ sleep 3
 echo ""
 
 pei "# Deploying to LocalStack..."
-pe "cd output/service"
-echo ""
-echo -e "${CYAN}📡 Creating DynamoDB table and deploying Lambda...${RESET}"
-pe "./deploy-local.sh"
-pe "cd ../.."
+if [ -d "output/service" ]; then
+    echo ""
+    echo -e "${CYAN}📡 Creating DynamoDB table and deploying Lambda...${RESET}"
+    if [ -x "output/service/deploy-local.sh" ]; then
+        pe "cd output/service && ./deploy-local.sh && cd ../.."
+    else
+        error_log "deploy-local.sh not found or not executable"
+    fi
+else
+    error_log "output/service directory not found"
+fi
 echo ""
 wait
 
 pei "# Installing dependencies and starting the API..."
-pe "cd output/service && pip install -q -r requirements.txt"
-echo ""
-echo -e "${CYAN}🚀 Starting Flask API (TABLE_NAME=tasks, DYNAMODB_ENDPOINT=http://localhost:4566)...${RESET}"
-pe "export TABLE_NAME=tasks && export DYNAMODB_ENDPOINT=http://localhost:4566 && python app.py &"
-sleep 2
+if [ -d "output/service" ] && [ -f "output/service/requirements.txt" ]; then
+    pe "cd output/service && pip install -q -r requirements.txt && cd ../.."
+    echo ""
+    echo -e "${CYAN}🚀 Starting Flask API (TABLE_NAME=tasks, DYNAMODB_ENDPOINT=http://localhost:4566)...${RESET}"
+    if [ -f "output/service/app.py" ]; then
+        pe "export TABLE_NAME=tasks && export DYNAMODB_ENDPOINT=http://localhost:4566 && cd output/service && python app.py &"
+    else
+        error_log "app.py not found in output/service/"
+    fi
+    sleep 2
+else
+    error_log "Required files not found in output/service/"
+fi
 echo ""
 wait
 
 pei "# Testing the deployed API..."
-pe "cd output/service"
-echo ""
-echo -e "${CYAN}🧪 Running API endpoint tests with JSON responses...${RESET}"
-pe "./test-endpoints.sh"
-pe "cd ../.."
+if [ -d "output/service" ] && [ -x "output/service/test-endpoints.sh" ]; then
+    echo ""
+    echo -e "${CYAN}🧪 Running API endpoint tests with JSON responses...${RESET}"
+    pe "cd output/service && ./test-endpoints.sh && cd ../.."
+else
+    error_log "test-endpoints.sh not found or not executable"
+fi
 echo ""
 wait
 
@@ -928,6 +1034,7 @@ wait
 
 # Cleanup
 pei "# Cleaning up..."
+pe "cd $SCRIPT_DIR"
 pe "pkill -f 'python app.py' || true"
 pe "cd localstack && docker-compose down && cd .."
 echo ""

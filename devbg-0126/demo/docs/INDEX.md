@@ -12,6 +12,13 @@ Complete documentation for the AI-Driven Development Pipeline Demo.
 - [**DEMO_FLOW.md**](DEMO_FLOW.md) - Visual pipeline diagram and flow
 - [**COPILOT_INTEGRATION.md**](COPILOT_INTEGRATION.md) - GitHub Copilot CLI setup
 
+## 📐 Architecture Decision Records (ADRs)
+
+- [**ADR-001-Technology-Stack.md**](ADR-001-Technology-Stack.md) - Why Python + Flask, DynamoDB, Lambda + API Gateway
+- [**ADR-002-API-Design.md**](ADR-002-API-Design.md) - REST endpoints, HTTP methods, request/response formats
+- [**ADR-003-Data-Model.md**](ADR-003-Data-Model.md) - DynamoDB table structure, keys, GSI considerations
+- [**ADR-004-Deployment-Architecture.md**](ADR-004-Deployment-Architecture.md) - Lambda configuration, API Gateway, environment management
+
 ## 🎨 Visual Features
 
 - [**VISUALIZATIONS.md**](VISUALIZATIONS.md) - Bar charts and metrics display

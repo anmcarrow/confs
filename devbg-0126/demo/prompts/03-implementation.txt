@@ -1,23 +1,21 @@
 Generate a complete implementation for the Task Management REST API based on the architecture decisions.
 
-Create the following files:
+You MUST create actual files in the output/service/ directory. Generate a bash script that creates these files:
 
-1. **app.py** - Main Flask application with Lambda handler
+1. **output/service/app.py** - Main Flask application with Lambda handler
    - Implement all CRUD endpoints: POST /tasks, GET /tasks, GET /tasks/{id}, PUT /tasks/{id}, DELETE /tasks/{id}
    - DynamoDB integration using boto3
    - Proper error handling and HTTP status codes
    - Input validation
 
-2. **requirements.txt** - Python dependencies
+2. **output/service/requirements.txt** - Python dependencies
    - Flask, boto3, and any other needed packages
 
-3. **serverless.yml** - Serverless Framework configuration
-   - Lambda function definition
-   - API Gateway configuration
-   - DynamoDB table resource
-   - IAM permissions
+3. **output/service/README.md** - Deployment and usage instructions
 
-4. **README.md** - Deployment and usage instructions
+Generate and execute bash commands to create these files using cat and heredocs.
+Create the directory structure first with: mkdir -p output/service
+Then create each file using: cat > filename << 'EOF' ... EOF
 
 Make the code production-ready with proper error handling, logging, and documentation.
-All operations should be fully automated and must not required any manual input.
+Execute all operations fully automated without asking for any manual input.

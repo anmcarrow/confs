@@ -1,13 +1,13 @@
 Generate deployment configuration for LocalStack (local AWS environment).
 
-Create:
+You MUST create actual files in the output/service/ directory. Generate a bash script that creates these files:
 
-1. **docker-compose.yml** - LocalStack setup
+1. **output/service/docker-compose.yml** - LocalStack setup
    - Services: DynamoDB, Lambda, API Gateway
    - Port mappings
    - Environment configuration
 
-2. **deploy-local.sh** - Deployment script for LocalStack
+2. **output/service/deploy-local.sh** - Deployment script for LocalStack
    - Create DynamoDB table (use --output json and display response)
    - Deploy Lambda function (show JSON response)
    - Configure API Gateway (show JSON response)
@@ -16,7 +16,7 @@ Create:
    - Display all JSON responses with echo and proper formatting
    - Use jq if available for pretty-printing, otherwise show raw JSON
 
-3. **test-endpoints.sh** - Test script to verify deployment
+3. **output/service/test-endpoints.sh** - Test script to verify deployment
    - Create a task (POST) - display JSON response
    - List tasks (GET) - display JSON response
    - Get specific task (GET) - display JSON response
@@ -32,6 +32,9 @@ IMPORTANT: Make ALL LocalStack API interactions visible:
 - Add descriptive echo statements before each operation
 - Use colors if possible (green for success, yellow for requests)
 
-Make it easy to run: just execute deploy-local.sh and test-endpoints.sh
-Run all operations fully automated and wihout asking for any manual input.
-All scripts should be fully automated and must not required any manual input.
+Generate and execute bash commands to create these files using cat and heredocs.
+Create the directory structure first with: mkdir -p output/service
+Then create each file using: cat > filename << 'EOF' ... EOF
+Make scripts executable with: chmod +x output/service/*.sh
+
+Execute all operations fully automated without asking for any manual input.
